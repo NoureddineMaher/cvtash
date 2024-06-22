@@ -15,6 +15,17 @@ const defaultAdmin = {
     _roles: process.env.AdmineRole
 }
 
+const defaultUser = {
+    firstName: process.env.userFirstName,
+    lastName: process.env.userlastName,
+    email: process.env.useremail,
+    password: process.env.userpassword,
+    phoneNumber: process.env.userphoneNumber,
+    verified: false,
+    firstVisit: true,
+    _roles: process.env.usereRole
+}
+
 // create default roles :
 async function createDefaultRoles() {
     try {
@@ -63,12 +74,38 @@ async function createDefaultAdmin() {
 }
 
 // create user account
+async function createDefaultUser() {
+    try {
+        const user = await userModel.findOne({ email: defaultUser.email });
+        if (!user) {
+            const salt = bcrypt.genSaltSync(10);
+            defaultUser.password = await bcrypt.hash(defaultUser.password, salt);
+            
+            const userRole = await roleModel.findOne({ role: 'user' }); // Finding role with name 'User'
+            if (userRole) {
+                defaultUser._roles = [userRole._id];
+                const newUser = new userModel(defaultUser);
+                await newUser.save();
+                console.log('Default user created successfully.');
+            } else {
+                console.error('User role not found.');
+                process.exit(1);
+            }
+        } else {
+            console.log('Default user already exists.');
+        }
+    } catch (err) {
+        console.error(err);
+        process.exit(1);
+    }
+}
 
 
 async function initializationDatabase() {
     await connectDb();
     await createDefaultRoles();
     await createDefaultAdmin();
+    await createDefaultUser();
 }
 
 
